@@ -153,15 +153,21 @@ def help() -> str:
     """
 
     base = '[/]   Returns the entire data set \n'
+    comment = '[/comment]   Returns the comment list from the ISS data\n'
+    header = '[/header] Returns the header dicitonary from the ISS data\n'
+    metadata = '[/metadata] Returns the metadata dictinoary from the ISS data\n'
     epochs = '[/epochs]  Returns list of all Epochs in the data set\n'
     epochs_spec = '[/epochs?limit=int&offset=int] Returns modified list of Epochs given query parameters\n'
     epoch = '[/epochs/<int:epoch>]    Returns state vectors for a specific Epoch from the data set\n'
+    location = '[/eochs/<int:epoch>/location]    Returns latitude, longitude, altitude, and geoposition for a specific Epoch \n'
     speed = '[/epochs/<int:epoch>/speed]  Returns instantaneous speed for a specific Epoch in the data set\n'
+    now = '[/now]   Returns the real time position of the ISS\n'
     h = '[/help]  Returns help text that describes each route\n'
     delete_data = '[/delete-data] Deletes all data from the dicitonary object\n'
     post = '[/post-data]  Reloads the dictionary object with data from the web\n'
-    
-    return base + epochs + epochs_spec + epoch + speed + h + delete_data + post
+    ret=base+comment+header+metadata+epochs+epochs_spec+epoch+location+speed+now+h+delete_data+post
+
+    return ret
 
 def get_config() -> dict:
     """
