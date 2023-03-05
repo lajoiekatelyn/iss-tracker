@@ -9,7 +9,10 @@ import time
 
 app = Flask(__name__)
 
-data = None
+# load ISS data into global data variable, same as iss_data() below.
+data = r = requests.get('https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml')
+data = xmltodict.parse(data.text)
+
 MEAN_EARTH_RADIUS = 6371
 
 def iss_data() -> dict:
@@ -35,9 +38,6 @@ def data_set() -> List[dict]:
         iss_data (List[dict]): a list of dictionaries containing trajectory data for the ISS in km and km/s.
     """
     global data
-    #temp = iss_data()
-    #data = temp['ndm']['oem']['body']['segment']['data']['stateVector']
-    data = iss_data()
     return data 
 
 @app.route('/comment', methods=['GET'])
