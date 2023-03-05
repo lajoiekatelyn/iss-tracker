@@ -31,19 +31,12 @@ To ensure functionality of this program, a Docker image is utilized. To pull the
 
 #### Pull the Docker Image
 ```
-docker pull lajoiekatelyn/iss_tracker:hw05
-```
+docker pull lajoiekatelyn/iss_tracker:midterm
 
-#### Build the Docker Image
-Run the following command in the git repo homework05 directory once you pull it to build the container.
+#### docker-compose
+To build and then run the app with debug mode OFF and to map the Docker port to a port on your local machine, run
 ```
-docker build -t lajoiekatelyn/iss_tracker:hw05 .
-```
-
-#### Run the Docker Image
-To run the app with debug mode OFF and to map the Docker port to a port on your local machine, run
-```
-docker run -it --rm -p 5000:5000 lajoiekatelyn/iss_tracker:hw05
+docker-compose up
 ```
 
 ## Usage
@@ -53,7 +46,7 @@ $ flask --app iss_tracker run
 ```
 or in a container with debug mode off (AFTER following the Docker instructions above):
 ```
-docker run -it --rm -p 5000:5000 lajoiekatelyn/iss_tracker:hw05
+docker-compose up
 ```
 Then, open a new terminal on the same local machine and query the app.
 
