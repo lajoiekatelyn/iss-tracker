@@ -2,7 +2,6 @@ from flask import Flask, request
 import requests
 import xmltodict
 import math
-from typing import List
 import yaml
 from geopy.geocoders import Nominatim
 import time
@@ -17,26 +16,28 @@ MEAN_EARTH_RADIUS = 6371
 
 def iss_data() -> dict:
     """
-    Pulls trajectory data (position, velocity) from the ISS from NASA.
+    Pulls the complete ISS dataset from NASA.
  
     Arguments:
         None
     Returns:
-        iss_data (dict): a dictionary of trajectory data for the ISS in km and km/s.
+        iss_data (dict): a dictionary data for the ISS, including position and velocity in km and km/s, respectively..
     """
+
     r = requests.get('https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml')
     return xmltodict.parse(r.text)
 
 @app.route('/', methods=['GET'])
-def data_set() -> List[dict]:
+def data_set() -> dict:
     """
     Provides ISS Trajectory data as a list of dictionaries.
 
     Arguments:
         None
     Returns:
-        iss_data (List[dict]): a list of dictionaries containing trajectory data for the ISS in km and km/s.
+        iss_data (dict): dictionaries containing information on the ISS' position and location over a span of 15 days.
     """
+    
     global data
     return data 
 
@@ -136,9 +137,10 @@ def location(epoch:int) -> dict:
     Arguments:
         epoch (int): index of the epoch of interest
     Returns:
-        
+        location (dict): latitude, longitude, and geoposition (if it is over land) of the ISS.    
 
     """
+
     try:
         len(data)
     except TypeError:
@@ -174,7 +176,6 @@ def location(epoch:int) -> dict:
     try:
         geoloc = geoloc.raw
     except AttributeError:
-        # print('No geolocation. Perhaps it is over the ocean.\n')
         d['geo'] = 'Somewhere over the ocean.'
         return d
           
@@ -190,8 +191,9 @@ def inst_speed(epoch:int) -> dict:
     Arguments:
         epoch (int): index of the epoch of interest.
     Returns:
-        state vector (dict): speed of the ISS in km/s.
+        speed (dict): speed of the ISS in km/s.
     """
+    
     try:
         len(data)
     except TypeError:
@@ -207,8 +209,23 @@ def inst_speed(epoch:int) -> dict:
     return {'speed': d}
 
 @app.route('/now', methods=['GET'])
-def now():
-    time_now = time.time()         # gives present time in seconds since unix epoch
+def now() -> dict:
+    """
+    Finds the epoch nearest to the current time and returns its location and speed.
+
+    Argumentes:
+        None
+    Returns:
+        current_iss_data (dict): location (latitude, longitude, geoposition) and speed of the ISS at the \"current\" time (closest epoch and time difference specified).
+
+    """
+    
+    try:
+        len(data)
+    except TypeError:
+        return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
+
+    time_now = time.time()
     epochs = list_of_all_epochs()
     epochs = list(epochs.keys())
 
@@ -227,8 +244,10 @@ def now():
                 'closest_epoch': closest_epoch,
                 'seconds_from_now': error
             }
+    
     d.update(inst_speed(ind))
     d.update(location(ind))
+   
     return d
 
 @app.route('/delete-data', methods=['DELETE'])
