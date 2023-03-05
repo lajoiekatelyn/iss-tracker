@@ -4,10 +4,13 @@ import xmltodict
 import math
 from typing import List
 import yaml
+from geopy.geocoders import Nominatim
+import time
 
 app = Flask(__name__)
 
 data = None
+MEAN_EARTH_RADIUS = 6371
 
 def iss_data() -> dict:
     """
@@ -32,9 +35,46 @@ def data_set() -> List[dict]:
         iss_data (List[dict]): a list of dictionaries containing trajectory data for the ISS in km and km/s.
     """
     global data
-    temp = iss_data()
-    data = temp['ndm']['oem']['body']['segment']['data']['stateVector']
+    #temp = iss_data()
+    #data = temp['ndm']['oem']['body']['segment']['data']['stateVector']
+    data = iss_data()
     return data 
+
+@app.route('/comment', methods=['GET'])
+def comment() -> dict:
+    """
+    Provides the comment heading from the pulled dataset.
+
+    Arguments:
+        None
+    Returns
+        comment (dict): ...
+    """
+    return {'COMMENT': data['ndm']['oem']['body']['segment']['data']['COMMENT']}
+
+@app.route('/header', methods=['GET'])
+def header() -> dict:
+    """
+    Provides the header for the pulled dataset.
+
+    Arguments:
+        None
+    Returns:
+        header (dict): ...
+    """
+    return {'header': data['ndm']['oem']['header']}
+
+@app.route('/metadata', methods=['GET'])
+def metadata() -> dict:
+    """
+    Provides the metadata from the pulled dataset.
+
+    Arguments:
+        None
+    Returns:
+        metadata (dict) ...
+    """
+    return {'metadata': data['ndm']['oem']['body']['segment']['metadata']}
 
 @app.route('/epochs', methods=['GET'])
 def list_of_all_epochs() -> dict:
@@ -53,7 +93,7 @@ def list_of_all_epochs() -> dict:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
 
     offset = request.args.get('offset', 0)
-    limit = request.args.get('limit', len(data))
+    limit = request.args.get('limit', len(data['ndm']['oem']['body']['segment']['data']['stateVector']))
 
     if offset:
         try:
@@ -68,30 +108,79 @@ def list_of_all_epochs() -> dict:
         
     epochs = {}
     for i in range(limit):
-        epochs[data[i+offset]['EPOCH']] = i+offset
+        epochs[data['ndm']['oem']['body']['segment']['data']['stateVector'][i+offset]['EPOCH']]=i+offset
     return epochs
 
 @app.route('/epochs/<int:epoch>', methods=['GET'])
 def state_vector(epoch:int) -> dict:
     """
-    Returns the position of the ISS at a specified epoch.
+    Returns the state vector of the ISS at a specified epoch.
 
     Arguments:
         epoch (int): index of the epoch of interest.
     Returns:
-        state vector (dict): x, y, and z position vector of the ISS in km.
+        state vector (dict): x, y, and z position and velocity vectors of the ISS in km and km/s, respectively..
     """
     try:
         len(data)
     except TypeError:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
 
-    epoch_data = data[epoch]
-    d = {}
-    d['x'] = epoch_data['X']['#text']
-    d['y'] = epoch_data['Y']['#text']
-    d['z'] = epoch_data['Z']['#text']
-    return d
+    return data['ndm']['oem']['body']['segment']['data']['stateVector'][epoch]
+
+@app.route('/epochs/<int:epoch>/location', methods=['GET'])
+def location(epoch:int) -> dict:
+    """
+    This function returns the latitude and longitude of the ISS at a given epoch, a long with details covering the area over which the ISS is passing.
+
+    Arguments:
+        epoch (int): index of the epoch of interest
+    Returns:
+        
+
+    """
+    try:
+        len(data)
+    except TypeError:
+        return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
+    
+    epoch_data = data['ndm']['oem']['body']['segment']['data']['stateVector'][epoch]
+    
+    hrs = int(epoch_data['EPOCH'][9:11]) 
+    mins = int(epoch_data['EPOCH'][12:14])
+
+    x = float(epoch_data['X']['#text'])
+    y = float(epoch_data['Y']['#text'])
+    z = float(epoch_data['Z']['#text'])
+    
+    lat = math.degrees(math.atan2(z, math.sqrt(x**2 + y**2)))                
+    lon = math.degrees(math.atan2(y, x)) - ((hrs-12)+(mins/60))*(360/24) + 24
+    alt = math.sqrt(x**2 + y**2 + z**2) - MEAN_EARTH_RADIUS 
+    
+    d = {
+            'location': {
+                'latitude': lat,
+                'longitude': lon,
+                'altitude': {
+                    'value': alt,
+                    'units': 'km'
+                    }
+                }
+         }
+
+    geocoder = Nominatim(user_agent='iss_tracker')
+    geoloc = geocoder.reverse((lat, lon), zoom=15, language='en')
+    
+    try:
+        geoloc = geoloc.raw
+    except AttributeError:
+        # print('No geolocation. Perhaps it is over the ocean.\n')
+        d['geo'] = 'Somewhere over the ocean.'
+        return d
+          
+    d['geo'] = geoloc["address"]
+
+    return d 
 
 @app.route('/epochs/<int:epoch>/speed', methods=['GET'])
 def inst_speed(epoch:int) -> dict:
@@ -108,12 +197,38 @@ def inst_speed(epoch:int) -> dict:
     except TypeError:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
 
-    epoch_data = data[epoch]
+    epoch_data = data['ndm']['oem']['body']['segment']['data']['stateVector'][epoch]
     d = {}
     xdot = float(epoch_data['X_DOT']['#text'])
     ydot = float(epoch_data['Y_DOT']['#text'])
     zdot = float(epoch_data['Z_DOT']['#text'])
-    d['speed'] = math.sqrt(xdot*xdot + ydot*ydot + zdot*zdot)
+    d['value'] = math.sqrt(xdot*xdot + ydot*ydot + zdot*zdot)
+    d['units'] = 'km/s'
+    return {'speed': d}
+
+@app.route('/now', methods=['GET'])
+def now():
+    time_now = time.time()         # gives present time in seconds since unix epoch
+    epochs = list_of_all_epochs()
+    epochs = list(epochs.keys())
+
+    closest_epoch = None
+    error = float('inf')
+    ind = None
+    for i in range(len(epochs)):
+        epoch = epochs[i]
+        time_epoch = time.mktime(time.strptime(epoch[:-5], '%Y-%jT%H:%M:%S'))
+        difference = time_now - time_epoch
+        if (abs(difference) < abs(error)):
+            error = difference
+            closest_epoch = epoch
+            ind = i
+        d = {
+                'closest_epoch': closest_epoch,
+                'seconds_from_now': error
+            }
+    d.update(inst_speed(ind))
+    d.update(location(ind))
     return d
 
 @app.route('/delete-data', methods=['DELETE'])
@@ -139,8 +254,7 @@ def post_data() -> str:
     """
 
     global data
-    temp = iss_data()
-    data = temp['ndm']['oem']['body']['segment']['data']['stateVector']
+    data = iss_data()
     return 'Data reloaded.\n'
 
 @app.route('/help', methods=['GET'])
