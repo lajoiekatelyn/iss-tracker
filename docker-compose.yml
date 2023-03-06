@@ -7,7 +7,5 @@ services:
                         context: ./
                         dockerfile: ./Dockerfile
                 image: lajoiekatelyn/iss_tracker:midterm
-                volumes:
-                        - ./config.yaml:/config.yaml
                 ports: 
                         - 5000:5000
