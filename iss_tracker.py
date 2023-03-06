@@ -16,7 +16,7 @@ MEAN_EARTH_RADIUS = 6371
 
 def iss_data() -> dict:
     """
-    Pulls the complete ISS dataset from NASA.
+    Pulls the complete ISS dataset from the web.
  
     Arguments:
         None
@@ -49,7 +49,7 @@ def comment() -> dict:
     Arguments:
         None
     Returns
-        comment (dict): ...
+        comment (dict): summarizes trajectory events and provides mass, ascending node passings with units, and coefficients.
     """
     return {'COMMENT': data['ndm']['oem']['body']['segment']['data']['COMMENT']}
 
@@ -61,7 +61,7 @@ def header() -> dict:
     Arguments:
         None
     Returns:
-        header (dict): ...
+        header (dict): the start time of the data set and the publisher.
     """
     return {'header': data['ndm']['oem']['header']}
 
@@ -73,7 +73,7 @@ def metadata() -> dict:
     Arguments:
         None
     Returns:
-        metadata (dict) ...
+        metadata (dict): identifies the object and its orbit and the start and end time of the data set.
     """
     return {'metadata': data['ndm']['oem']['body']['segment']['metadata']}
 
@@ -285,20 +285,21 @@ def help() -> str:
         help_msg (str): message containing information on all routes in app
     """
 
-    base = '[/]   Returns the entire data set \n'
-    comment = '[/comment]   Returns the comment list from the ISS data\n'
-    header = '[/header] Returns the header dicitonary from the ISS data\n'
-    metadata = '[/metadata] Returns the metadata dictinoary from the ISS data\n'
-    epochs = '[/epochs]  Returns list of all Epochs in the data set\n'
-    epochs_spec = '[/epochs?limit=int&offset=int] Returns modified list of Epochs given query parameters\n'
-    epoch = '[/epochs/<int:epoch>]    Returns state vectors for a specific Epoch from the data set\n'
-    location = '[/eochs/<int:epoch>/location]    Returns latitude, longitude, altitude, and geoposition for a specific Epoch \n'
-    speed = '[/epochs/<int:epoch>/speed]  Returns instantaneous speed for a specific Epoch in the data set\n'
-    now = '[/now]   Returns the real time position of the ISS\n'
-    h = '[/help]  Returns help text that describes each route\n'
-    delete_data = '[/delete-data] Deletes all data from the dicitonary object\n'
-    post = '[/post-data]  Reloads the dictionary object with data from the web\n'
-    ret=base+comment+header+metadata+epochs+epochs_spec+epoch+location+speed+now+h+delete_data+post
+    top = '\nUsage: `curl localhost:5000/<option>` \n\nOptions: \n'
+    base = '[/]                                 Returns the entire data set \n'
+    comment = '[/comment]                          Returns the comment list from the ISS data\n'
+    header = '[/header]                           Returns the header dicitonary from the ISS data\n'
+    metadata = '[/metadata]                         Returns the metadata dictinoary from the ISS data\n'
+    epochs = '[/epochs]                           Returns list of all Epochs in the data set\n'
+    epochs_spec = '[/epochs?limit=int&offset=int]      Returns modified list of Epochs given query parameters\n'
+    epoch = '[/epochs/<int:epoch>]               Returns state vectors for a specific Epoch from the data set\n'
+    location = '[/eochs/<int:epoch>/location]       Returns latitude, longitude, altitude, and geoposition for a specific Epoch \n'
+    speed = '[/epochs/<int:epoch>/speed]         Returns instantaneous speed for a specific Epoch in the data set\n'
+    now = '[/now]                              Returns the real time position of the ISS\n'
+    h = '[/help]                             Returns help text that describes each route\n'
+    delete_data = '[/delete-data]                      Deletes all data from the dicitonary object\n'
+    post = '[/post-data]                        Reloads the dictionary object with data from the web\n'
+    ret=top+base+comment+header+metadata+epochs+epochs_spec+epoch+location+speed+now+h+delete_data+post+'\n'
 
     return ret
 
