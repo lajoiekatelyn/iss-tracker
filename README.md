@@ -32,6 +32,7 @@ To ensure functionality of this program, a Docker image is utilized. To pull the
 #### Pull the Docker Image
 ```
 docker pull lajoiekatelyn/iss_tracker:midterm
+```
 
 #### docker-compose
 To build and then run the app with debug mode OFF and to map the Docker port to a port on your local machine, run
