@@ -31,13 +31,13 @@ To ensure functionality of this program, a Docker image is utilized. To pull the
 
 #### Pull the Docker Image
 ```
-docker pull lajoiekatelyn/iss_tracker:midterm
+$ docker pull lajoiekatelyn/iss_tracker:midterm
 ```
 
 #### docker-compose
 To build and then run the app with debug mode OFF and to map the Docker port to a port on your local machine, run
 ```
-docker-compose up
+$ docker-compose up
 ```
 
 ## Usage
@@ -47,41 +47,121 @@ $ flask --app iss_tracker run
 ```
 or in a container with debug mode off (AFTER following the Docker instructions above):
 ```
-docker-compose up
+$ docker-compose up
 ```
 Then, open a new terminal on the same local machine and query the app.
 
 ### Help
 To return a help text that describes each route in the app,
 ```
-$ curl localhost:5000/help
-[/]   Returns the entire data set
-[/epochs]  Returns list of all Epochs in the data set
-[/epochs?limit=int&offset=int] Returns modified list of Epochs given query parameters
-[/epochs/<int:epoch>]    Returns state vectors for a specific Epoch from the data set
-[/epochs/<int:epoch>/speed]  Returns instantaneous speed for a specific Epoch in the data set
-[/help]  Returns help text that describes each route
-[/delete-data] Deletes all data from the dicitonary object
-[/post-data]  Reloads the dictionary object with data from the web
+$ curl localhost:5000/
+
+Usage: `curl localhost:5000/<option>`
+
+Options:
+[/]                                 Returns the entire data set
+[/comment]                          Returns the comment list from the ISS data
+[/header]                           Returns the header dicitonary from the ISS data
+[/metadata]                         Returns the metadata dictinoary from the ISS data
+[/epochs]                           Returns list of all Epochs in the data set
+[/epochs?limit=int&offset=int]      Returns modified list of Epochs given query parameters
+[/epochs/<int:epoch>]               Returns state vectors for a specific Epoch from the data set
+[/eochs/<int:epoch>/location]       Returns latitude, longitude, altitude, and geoposition for a specific Epoch
+[/epochs/<int:epoch>/speed]         Returns instantaneous speed for a specific Epoch in the data set
+[/now]                              Returns the real time position of the ISS
+[/help]                             Returns help text that describes each route
+[/delete-data]                      Deletes all data from the dicitonary object
+[/post-data]                        Reloads the dictionary object with data from the web
+
 ```
 
 ### Post Data
 To post the data set to the app and recieve a `Data loaded.` message:
 ```
-curl -X POST localhost:5000/post-data
+$ curl -X POST localhost:5000/post-data
 ```
 
 ### Delete Data
 To delete all of the data on the app and recieve a `Data deleted.` message:
 ```
-curl -X DELETE localhost:5000/data-delete
+$ curl -X DELETE localhost:5000/data-delete
+```
+
+### Comment
+For more technical information on the orbit of the ISS:
+```
+$ curl localhost:5000/comment
+{
+  "COMMENT": [
+    "Units are in kg and m^2",
+    "MASS=473413.00",
+    "DRAG_AREA=1618.40",
+    "DRAG_COEFF=2.20",
+    "SOLAR_RAD_AREA=0.00",
+    "SOLAR_RAD_COEFF=0.00",
+    "Orbits start at the ascending node epoch",
+    "ISS first asc. node: EPOCH = 2023-03-03T16:45:01.089 $ ORBIT = 2542 $ LAN(DEG) = 78.61627",
+    "ISS last asc. node : EPOCH = 2023-03-18T14:19:09.505 $ ORBIT = 2773 $ LAN(DEG) = 26.64425",
+    "Begin sequence of events",
+    "TRAJECTORY EVENT SUMMARY:",
+    null,
+    "|       EVENT        |       TIG        | ORB |   DV    |   HA    |   HP    |",
+    "|                    |       GMT        |     |   M/S   |   KM    |   KM    |",
+    "|                    |                  |     |  (F/S)  |  (NM)   |  (NM)   |",
+    "=============================================================================",
+    "GMT 067 ISS Reboost   067:20:02:00.000             1.0     427.0     407.3",
+    "(3.3)   (230.6)   (219.9)",
+    null,
+    "Crew05 Undock         068:08:00:00.000             0.0     427.0     410.8",
+    "(0.0)   (230.6)   (221.8)",
+    null,
+    "SpX27 Launch          074:00:30:00.000             0.0     426.7     409.9",
+    "(0.0)   (230.4)   (221.3)",
+    null,
+    "SpX27 Docking         075:12:00:00.000             0.0     426.7     409.8",
+    "(0.0)   (230.4)   (221.3)",
+    null,
+    "=============================================================================",
+    "End sequence of events"
+  ]
+}
+```
+
+### Header
+For information on the publisher and the oldest data point in data set:
+```
+$ curl localhost:5000/header
+{
+  "header": {
+    "CREATION_DATE": "2023-063T04:34:04.606Z",
+    "ORIGINATOR": "JSC"
+  }
+}
+```
+
+### Metadata
+For basic information on the subject of the data set and the data's timeframe:
+```
+$ curl localhost:5000/metadata
+{
+  "metadata": {
+    "CENTER_NAME": "EARTH",
+    "OBJECT_ID": "1998-067-A",
+    "OBJECT_NAME": "ISS",
+    "REF_FRAME": "EME2000",
+    "START_TIME": "2023-062T15:47:35.995Z",
+    "STOP_TIME": "2023-077T15:47:35.995Z",
+    "TIME_SYSTEM": "UTC"
+  }
+}
 ```
 
 ### Raw Data
-To query all of the raw data (with the headers, comments, and metadata removed):
+To query all of the raw data:
 ```
 $ curl localhost:5000/
 [
+  ...
   {
     "EPOCH": "2023-046T12:00:00.000Z",
     "X": {
@@ -143,20 +223,107 @@ $ curl 'localhost:5000/epochs?limit5&offset=5'
 }
 ```
 
-### Position Vector
+### State Vector
 ```
-$ localhost:5000/epoch/0
+$ curl localhost:5000/epoch/0
 ```
-will return the position of the top of the data file as a dictionary, where `x`, `y`, and `z` are in km.
+will return the state vector of the epoch queried as a dictionary,
 ```
-{"x":"-4788.3685075076201","y":"1403.5496223712601","z":"-4613.1094793006896"}
+{
+  "EPOCH": "2023-062T15:47:35.995Z",
+  "X": {
+    "#text": "1159.52052",
+    "@units": "km"
+  },
+  "X_DOT": {
+    "#text": "6.0290164996059996",
+    "@units": "km/s"
+  },
+  "Y": {
+    "#text": "-5653.490503",
+    "@units": "km"
+  },
+  "Y_DOT": {
+    "#text": "-1.5981031488090001",
+    "@units": "km/s"
+  },
+  "Z": {
+    "#text": "3580.4820159999999",
+    "@units": "km"
+  },
+  "Z_DOT": {
+    "#text": "-4.4534270340889996",
+    "@units": "km/s"
+  }
+}
 ```
+### Location
+To query the latitude, longitude, altitude, and geoposition of a specific epoch
+```
+$ curl localhost:5000/epochs/0/location
+{
+  "geo": {
+    "ISO3166-2-lvl4": "US-AZ",
+    "country": "United States",
+    "country_code": "us",
+    "county": "Pima County",
+    "state": "Arizona"
+  },
+  "location": {
+    "altitude": {
+      "units": "km",
+      "value": 420.6341310992075
+    },
+    "latitude": 31.815794472620638,
+    "longitude": -111.15947635149035
+  }
+}
+```
+NOTE: in cases where `"geo": "Somewhere over the ocean.",` is returned, the ISS does not have a geolocation, as it is over an ocean.
+
 ### Speed
-Finally, speed can also be queried:
+To query the instantaneous speed of a specific epoch:
 ```
-$ localhost:5000/epoch/0/speed
+$ curl localhost:5000/epoch/0/speed
 ```
 which will return the instantaneous speed of the ISS in km/s as a dictionary.
 ```
-{"speed":7.656860830086751}
+{
+  "speed": {
+    "units": "km/s",
+    "value": 7.663940629644085
+  }
+}
 ```
+
+### Now
+To find the recorded epoch closest to the time when the `now` route is queried:
+```
+$ curl localhost:5000/now
+{
+  "closest_epoch": "2023-064T16:55:00.000Z",
+  "geo": {
+    "ISO3166-2-lvl4": "CN-SC",
+    "city": "Ngawa",
+    "country": "China",
+    "country_code": "cn",
+    "county": "Ngawa County",
+    "region": "Ngawa Tibetan and Qiang Autonomous Prefecture",
+    "state": "Sichuan"
+  },
+  "location": {
+    "altitude": {
+      "units": "km",
+      "value": 416.53947754175533
+    },
+    "latitude": 32.80853294941874,
+    "longitude": 101.61136852015716
+  },
+  "seconds_from_now": 82.67322635650635,
+  "speed": {
+    "units": "km/s",
+    "value": 7.668326332043633
+  }
+}
+```
+which gives the closest epoch, the number of seconds from the current epoch (at querying time), and the closest epoch's geolocation (`geo`), location, and speed.
