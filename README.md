@@ -6,15 +6,15 @@ Knowing the current position and velocity of the ISS is vital to ensuring that i
 ### Flask
 This program uses the Python Flask library. Flask is a web framework used to develop generalized web applications. To install Flask, please enter the following command into your terminal:
 
-```
-$ pip3 install --user flask
+```console
+[user]:~$ pip3 install --user flask
 ```
 
 ### Required Data
 Data required for this app is the [ISS Trajectory Data](https://spotthestation.nasa.gov/trajectory_data.cfm) provided by Spot The Station in XML format, which is accessed using the Python `requests` library. If requests is not installed on your machine, please install it using the following command in your terminal:
 
-```
-$ pip3 install --user requests
+```console
+[user]:~$ pip3 install --user requests
 ```
 The data can also be accessed in text format (`.txt`). Both file formats contain headers, comments, metadata, and data. The important information for this app is the data, which is in the form of a state vector consisting of position (km) and velocity (km/s).
 
@@ -26,35 +26,44 @@ To calculate instantaenous speed, `iss_tracker.py` uses the following equation:
 speed = \sqrt{\dot{x}^2+\dot{y}^2+\dot{z}^2}
 ```
 
+To provide latitude, longitude, and altitude, the program uses functions provided by J. Wallen in the midterm instructions:
+```python
+lat = math.degrees(math.atan2(z, math.sqrt(x**2 + y**2)))                
+lon = math.degrees(math.atan2(y, x)) - ((hrs-12)+(mins/60))*(360/24) + 24
+alt = math.sqrt(x**2 + y**2 + z**2) - MEAN_EARTH_RADIUS 
+```
+
+To calculate 
+
 ### Docker
 To ensure functionality of this program, a Docker image is utilized. To pull the associated docker image, run
 
 #### Pull the Docker Image
-```
-$ docker pull lajoiekatelyn/iss_tracker:midterm
+```console
+[user]:~$ docker pull lajoiekatelyn/iss_tracker:midterm
 ```
 
 #### docker-compose
 To build and then run the app with debug mode OFF and to map the Docker port to a port on your local machine, run
-```
-$ docker-compose up
+```console
+[user]:~/iss-tracker$ docker-compose up
 ```
 
 ## Usage
 To launch the app, please navigate to the root of the homework05 folder. Then, enter the following into the terminal to run the app locally in debug mode
-```
-$ flask --app iss_tracker run
+```console
+[user]:~/iss-tracker$ flask --app iss_tracker run
 ```
 or in a container with debug mode off (AFTER following the Docker instructions above):
-```
-$ docker-compose up
+```console
+[user]:~/iss-tracker$ docker-compose up
 ```
 Then, open a new terminal on the same local machine and query the app.
 
 ### Help
 To return a help text that describes each route in the app,
-```
-$ curl localhost:5000/
+```console
+[user]:~$ curl localhost:5000/
 
 Usage: `curl localhost:5000/<option>`
 
@@ -77,20 +86,20 @@ Options:
 
 ### Post Data
 To post the data set to the app and recieve a `Data loaded.` message:
-```
-$ curl -X POST localhost:5000/post-data
+```console
+[user]:~$ curl -X POST localhost:5000/post-data
 ```
 
 ### Delete Data
 To delete all of the data on the app and recieve a `Data deleted.` message:
-```
-$ curl -X DELETE localhost:5000/data-delete
+```console
+[user]:~$ curl -X DELETE localhost:5000/data-delete
 ```
 
 ### Comment
 For more technical information on the orbit of the ISS:
-```
-$ curl localhost:5000/comment
+```console
+[user]:~$ curl localhost:5000/comment
 {
   "COMMENT": [
     "Units are in kg and m^2",
@@ -129,8 +138,8 @@ $ curl localhost:5000/comment
 
 ### Header
 For information on the publisher and the oldest data point in data set:
-```
-$ curl localhost:5000/header
+```console
+[user]:~$ curl localhost:5000/header
 {
   "header": {
     "CREATION_DATE": "2023-063T04:34:04.606Z",
@@ -141,8 +150,8 @@ $ curl localhost:5000/header
 
 ### Metadata
 For basic information on the subject of the data set and the data's timeframe:
-```
-$ curl localhost:5000/metadata
+```console
+[user]:~$ curl localhost:5000/metadata
 {
   "metadata": {
     "CENTER_NAME": "EARTH",
@@ -158,8 +167,8 @@ $ curl localhost:5000/metadata
 
 ### Raw Data
 To query all of the raw data:
-```
-$ curl localhost:5000/
+```console
+[user]:~$ curl localhost:5000/
 [
   ...
   {
@@ -195,8 +204,8 @@ $ curl localhost:5000/
 
 ### List of Epochs
 To obtain a dictionary of all the epochs in the data and their respective indicies, such that they can be called to find a specific position vector:
-```
-$ curl localhost:5000/epochs
+```console
+[user]:~$ curl localhost:5000/epochs
 {
   "2023-046T12:00:00.000Z": 0,
   "2023-046T12:04:00.000Z": 1,
@@ -212,8 +221,8 @@ $ curl localhost:5000/epochs
   ...
 ```
 A limited number of epochs and/or an offset set of Epochs can be queries as well. For example,
-```
-$ curl 'localhost:5000/epochs?limit5&offset=5'
+```console
+[user]:~$ curl 'localhost:5000/epochs?limit5&offset=5'
 {
   "2023-046T12:20:00.000Z": 5,
   "2023-046T12:24:00.000Z": 6,
@@ -224,11 +233,11 @@ $ curl 'localhost:5000/epochs?limit5&offset=5'
 ```
 
 ### State Vector
-```
-$ curl localhost:5000/epoch/0
+```console
+[user]:~$ curl localhost:5000/epoch/0
 ```
 will return the state vector of the epoch queried as a dictionary,
-```
+```console
 {
   "EPOCH": "2023-062T15:47:35.995Z",
   "X": {
@@ -259,8 +268,8 @@ will return the state vector of the epoch queried as a dictionary,
 ```
 ### Location
 To query the latitude, longitude, altitude, and geoposition of a specific epoch
-```
-$ curl localhost:5000/epochs/0/location
+```console
+[user]:~$ curl localhost:5000/epochs/0/location
 {
   "geo": {
     "ISO3166-2-lvl4": "US-AZ",
@@ -283,11 +292,11 @@ NOTE: in cases where `"geo": "Somewhere over the ocean.",` is returned, the ISS 
 
 ### Speed
 To query the instantaneous speed of a specific epoch:
-```
-$ curl localhost:5000/epoch/0/speed
+```console
+[user]:~$ curl localhost:5000/epoch/0/speed
 ```
 which will return the instantaneous speed of the ISS in km/s as a dictionary.
-```
+```console
 {
   "speed": {
     "units": "km/s",
@@ -298,8 +307,8 @@ which will return the instantaneous speed of the ISS in km/s as a dictionary.
 
 ### Now
 To find the recorded epoch closest to the time when the `now` route is queried:
-```
-$ curl localhost:5000/now
+```console
+[user]:~$ curl localhost:5000/now
 {
   "closest_epoch": "2023-064T16:55:00.000Z",
   "geo": {
