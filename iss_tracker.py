@@ -8,12 +8,6 @@ import time
 
 app = Flask(__name__)
 
-# load ISS data into global data variable, same as iss_data() below.
-data = r = requests.get('https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml')
-data = xmltodict.parse(data.text)
-
-MEAN_EARTH_RADIUS = 6371
-
 def iss_data() -> dict:
     """
     Pulls the complete ISS dataset from the web.
@@ -27,6 +21,10 @@ def iss_data() -> dict:
     r = requests.get('https://nasa-public-data.s3.amazonaws.com/iss-coords/current/ISS_OEM/ISS.OEM_J2K_EPH.xml')
     return xmltodict.parse(r.text)
 
+# load ISS data into global data variable, same as iss_data() below.
+data = iss_data()
+MEAN_EARTH_RADIUS = 6371
+
 @app.route('/', methods=['GET'])
 def data_set() -> dict:
     """
@@ -37,8 +35,9 @@ def data_set() -> dict:
     Returns:
         iss_data (dict): dictionaries containing information on the ISS' position and location over a span of 15 days.
     """
-    
-    global data
+    if not data:
+        return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
+
     return data 
 
 @app.route('/comment', methods=['GET'])
@@ -51,9 +50,7 @@ def comment() -> dict:
     Returns
         comment (dict): summarizes trajectory events and provides mass, ascending node passings with units, and coefficients.
     """
-    try:
-        len(data)
-    except TypeError:
+    if not data:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
     
     return {'COMMENT': data['ndm']['oem']['body']['segment']['data']['COMMENT']}
@@ -69,9 +66,7 @@ def header() -> dict:
         header (dict): the start time of the data set and the publisher.
     """
     
-    try:
-        len(data)
-    except TypeError:
+    if not data:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
     
     return {'header': data['ndm']['oem']['header']}
@@ -87,9 +82,7 @@ def metadata() -> dict:
         metadata (dict): identifies the object and its orbit and the start and end time of the data set.
     """
     
-    try:
-        len(data)
-    except TypeError:
+    if not data:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
     
     return {'metadata': data['ndm']['oem']['body']['segment']['metadata']}
@@ -105,9 +98,7 @@ def list_of_all_epochs() -> dict:
         epochs (dict): dict of all epochs in the data set and their indicies, epochs in J2000 format.
     """
 
-    try:
-        len(data)
-    except TypeError:
+    if not data:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
 
     offset = request.args.get('offset', 0)
@@ -129,8 +120,8 @@ def list_of_all_epochs() -> dict:
         epochs[data['ndm']['oem']['body']['segment']['data']['stateVector'][i+offset]['EPOCH']]=i+offset
     return epochs
 
-@app.route('/epochs/<int:epoch>', methods=['GET'])
-def state_vector(epoch:int) -> dict:
+@app.route('/epochs/<string:epoch>', methods=['GET'])
+def state_vector(epoch:str) -> dict:
     """
     Returns the state vector of the ISS at a specified epoch.
 
@@ -139,15 +130,17 @@ def state_vector(epoch:int) -> dict:
     Returns:
         state vector (dict): x, y, and z position and velocity vectors of the ISS in km and km/s, respectively..
     """
-    try:
-        len(data)
-    except TypeError:
+    if not data:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
+    
+    for item in data['ndm']['oem']['body']['segment']['data']['stateVector']:
+        if item['EPOCH'] == epoch:
+            return item
 
-    return data['ndm']['oem']['body']['segment']['data']['stateVector'][epoch]
+    return 'Requested epoch does not exist in data set.\n', 400
 
-@app.route('/epochs/<int:epoch>/location', methods=['GET'])
-def location(epoch:int) -> dict:
+@app.route('/epochs/<string:epoch>/location', methods=['GET'])
+def location(epoch:str) -> dict:
     """
     This function returns the latitude and longitude of the ISS at a given epoch, a long with details covering the area over which the ISS is passing.
 
@@ -158,13 +151,13 @@ def location(epoch:int) -> dict:
 
     """
 
-    try:
-        len(data)
-    except TypeError:
+    if not data:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
     
-    epoch_data = data['ndm']['oem']['body']['segment']['data']['stateVector'][epoch]
-    
+    epoch_data = state_vector(epoch)
+    if not isinstance(epoch_data, dict):
+        return epoch_data
+
     hrs = int(epoch_data['EPOCH'][9:11]) 
     mins = int(epoch_data['EPOCH'][12:14])
 
@@ -200,8 +193,8 @@ def location(epoch:int) -> dict:
 
     return d 
 
-@app.route('/epochs/<int:epoch>/speed', methods=['GET'])
-def inst_speed(epoch:int) -> dict:
+@app.route('/epochs/<string:epoch>/speed', methods=['GET'])
+def inst_speed(epoch:str) -> dict:
     """
     Returns the instantaneous speed of the ISS at a specified epoch.
 
@@ -211,12 +204,13 @@ def inst_speed(epoch:int) -> dict:
         speed (dict): speed of the ISS in km/s.
     """
     
-    try:
-        len(data)
-    except TypeError:
+    if not data:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
 
-    epoch_data = data['ndm']['oem']['body']['segment']['data']['stateVector'][epoch]
+    epoch_data = state_vector(epoch)
+    if not isinstance(epoch_data, dict):
+        return epoch_data
+
     d = {}
     xdot = float(epoch_data['X_DOT']['#text'])
     ydot = float(epoch_data['Y_DOT']['#text'])
@@ -237,9 +231,7 @@ def now() -> dict:
 
     """
     
-    try:
-        len(data)
-    except TypeError:
+    if not data:
         return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
 
     time_now = time.time()
@@ -262,8 +254,8 @@ def now() -> dict:
                 'seconds_from_now': error
             }
     
-    d.update(inst_speed(ind))
-    d.update(location(ind))
+    d.update(inst_speed(closest_epoch))
+    d.update(location(closest_epoch))
    
     return d
 
@@ -277,7 +269,7 @@ def delete_data() -> str:
     """
 
     global data
-    data = None
+    data.clear()    
     return 'Data deleted.\n'
 
 @app.route('/post-data', methods=['POST'])
