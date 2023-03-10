@@ -33,8 +33,6 @@ lon = math.degrees(math.atan2(y, x)) - ((hrs-12)+(mins/60))*(360/24) + 24
 alt = math.sqrt(x**2 + y**2 + z**2) - MEAN_EARTH_RADIUS 
 ```
 
-To calculate 
-
 ### Docker
 To ensure functionality of this program, a Docker image is utilized. To pull the associated docker image, run
 
@@ -44,9 +42,9 @@ To ensure functionality of this program, a Docker image is utilized. To pull the
 ```
 
 #### docker-compose
-To build and then run the app with debug mode OFF and to map the Docker port to a port on your local machine, run
+To build and then run the app and to map the Docker port to a port on your local machine, run
 ```console
-[user]:~/iss-tracker$ docker-compose up
+[user]:~/iss-tracker$ docker-compose up --build
 ```
 
 ## Usage
@@ -54,7 +52,7 @@ To launch the app, please navigate to the root of the homework05 folder. Then, e
 ```console
 [user]:~/iss-tracker$ flask --app iss_tracker run
 ```
-or in a container with debug mode off (AFTER following the Docker instructions above):
+or in a container (AFTER following the Docker instructions above):
 ```console
 [user]:~/iss-tracker$ docker-compose up
 ```
@@ -234,34 +232,34 @@ A limited number of epochs and/or an offset set of Epochs can be queries as well
 
 ### State Vector
 ```console
-[user]:~$ curl localhost:5000/epoch/0
+[user]:~$ curl localhost:5000/epochs/2023-079T11:56:00.000Z
 ```
 will return the state vector of the epoch queried as a dictionary,
 ```console
 {
-  "EPOCH": "2023-062T15:47:35.995Z",
+  "EPOCH": "2023-079T11:56:00.000Z",
   "X": {
-    "#text": "1159.52052",
+    "#text": "-5278.6784637584797",
     "@units": "km"
   },
   "X_DOT": {
-    "#text": "6.0290164996059996",
+    "#text": "1.85340001562428",
     "@units": "km/s"
   },
   "Y": {
-    "#text": "-5653.490503",
+    "#text": "-3986.4000884792299",
     "@units": "km"
   },
   "Y_DOT": {
-    "#text": "-1.5981031488090001",
+    "#text": "-4.7074783355013397",
     "@units": "km/s"
   },
   "Z": {
-    "#text": "3580.4820159999999",
+    "#text": "1546.6403334670899",
     "@units": "km"
   },
   "Z_DOT": {
-    "#text": "-4.4534270340889996",
+    "#text": "-5.7580224140764198",
     "@units": "km/s"
   }
 }
@@ -269,22 +267,16 @@ will return the state vector of the epoch queried as a dictionary,
 ### Location
 To query the latitude, longitude, altitude, and geoposition of a specific epoch
 ```console
-[user]:~$ curl localhost:5000/epochs/0/location
+[user]:~$ curl localhost:5000/epochs/2023-079T11:56:00.000Z/location
 {
-  "geo": {
-    "ISO3166-2-lvl4": "US-AZ",
-    "country": "United States",
-    "country_code": "us",
-    "county": "Pima County",
-    "state": "Arizona"
-  },
+  "geo": "Somewhere over the ocean.",
   "location": {
     "altitude": {
       "units": "km",
-      "value": 420.6341310992075
+      "value": 422.226649412044
     },
-    "latitude": 31.815794472620638,
-    "longitude": -111.15947635149035
+    "latitude": 13.16016247600921,
+    "longitude": -117.94029757461675
   }
 }
 ```
@@ -293,14 +285,14 @@ NOTE: in cases where `"geo": "Somewhere over the ocean.",` is returned, the ISS 
 ### Speed
 To query the instantaneous speed of a specific epoch:
 ```console
-[user]:~$ curl localhost:5000/epoch/0/speed
+[user]:~$ curl localhost:5000/epochs/2023-079T11:56:00.000Z/speed
 ```
 which will return the instantaneous speed of the ISS in km/s as a dictionary.
 ```console
 {
   "speed": {
     "units": "km/s",
-    "value": 7.663940629644085
+    "value": 7.664872211468172
   }
 }
 ```
