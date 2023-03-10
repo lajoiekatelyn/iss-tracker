@@ -320,7 +320,7 @@ def get_config() -> dict:
         config (dict): debug parameter
     """
 
-    default_config = {"debug": False}
+    default_config = {"debug": True}
     try:
         with open('config.yaml', 'r') as f:
             return yaml.safe_load(f)
