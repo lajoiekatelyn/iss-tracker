@@ -117,8 +117,11 @@ def list_of_all_epochs() -> dict:
             
     epochs = {} 
     try:
-        for i in range(limit-offset):
-            epochs[data['ndm']['oem']['body']['segment']['data']['stateVector'][i+offset]['EPOCH']]=i+offset
+        for i in range(limit):
+            try:
+                epochs[data['ndm']['oem']['body']['segment']['data']['stateVector'][i+offset]['EPOCH']]=i+offset
+            except IndexError:
+                return epochs
     except TypeError:
         return 'Invalid limit or offset parameter; limit and offset must be integers.\n', 400
 
