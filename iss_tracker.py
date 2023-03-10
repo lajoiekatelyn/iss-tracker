@@ -114,10 +114,14 @@ def list_of_all_epochs() -> dict:
             limit = int(limit)
         except ValueError:
             return 'Invalid limit parameter; limit must be an integer.\n', 400
-        
-    epochs = {}
-    for i in range(limit):
-        epochs[data['ndm']['oem']['body']['segment']['data']['stateVector'][i+offset]['EPOCH']]=i+offset
+            
+    epochs = {} 
+    try:
+        for i in range(limit-offset):
+            epochs[data['ndm']['oem']['body']['segment']['data']['stateVector'][i+offset]['EPOCH']]=i+offset
+    except TypeError:
+        return 'Invalid limit or offset parameter; limit and offset must be integers.\n', 400
+
     return epochs
 
 @app.route('/epochs/<string:epoch>', methods=['GET'])
