@@ -51,6 +51,11 @@ def comment() -> dict:
     Returns
         comment (dict): summarizes trajectory events and provides mass, ascending node passings with units, and coefficients.
     """
+    try:
+        len(data)
+    except TypeError:
+        return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
+    
     return {'COMMENT': data['ndm']['oem']['body']['segment']['data']['COMMENT']}
 
 @app.route('/header', methods=['GET'])
@@ -63,6 +68,12 @@ def header() -> dict:
     Returns:
         header (dict): the start time of the data set and the publisher.
     """
+    
+    try:
+        len(data)
+    except TypeError:
+        return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
+    
     return {'header': data['ndm']['oem']['header']}
 
 @app.route('/metadata', methods=['GET'])
@@ -75,6 +86,12 @@ def metadata() -> dict:
     Returns:
         metadata (dict): identifies the object and its orbit and the start and end time of the data set.
     """
+    
+    try:
+        len(data)
+    except TypeError:
+        return 'Empty data; repost data using \'curl -X POST localhost:5000/post-data\'\n', 400
+    
     return {'metadata': data['ndm']['oem']['body']['segment']['metadata']}
 
 @app.route('/epochs', methods=['GET'])
